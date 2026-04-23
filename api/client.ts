@@ -1,6 +1,7 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
-const BASE_URL = 'https://bssm-api.zer0base.me';
+const BASE_URL =
+    process.env.EXPO_PUBLIC_API_URL ?? 'https://bssm-api.zer0base.me';
 
 const apiClient = axios.create({
     baseURL: BASE_URL,

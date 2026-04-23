@@ -136,6 +136,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     setTokens: (accessToken, refreshToken) => {
+        saveTokens(accessToken, refreshToken).catch(console.error);
         set({ accessToken, refreshToken, status: 'authenticated' });
     },
 

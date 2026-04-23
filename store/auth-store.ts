@@ -22,37 +22,43 @@ async function deleteTokens() {
     ]);
 }
 
-export async function loadTokensFromSecureStore(): Promise<{
-    accessToken: string | null;
-    refreshToken: string | null;
-}> {
-    const [accessToken, refreshToken] = await Promise.all([
-        SecureStore.getItemAsync(KEYS.accessToken),
-        SecureStore.getItemAsync(KEYS.refreshToken),
-    ]);
-    return { accessToken, refreshToken };
-}
+type AuthStatus = 'checking' | 'authenticated' | 'guest';
 
 interface AuthState {
+    status: AuthStatus;
     user: User | null;
     accessToken: string | null;
     refreshToken: string | null;
     loading: boolean;
     error: string | null;
 
+    restoreSession: () => Promise<void>;
     signUp: (payload: SignupPayload) => Promise<void>;
     logIn: (payload: LoginPayload) => Promise<void>;
-    logOut: () => void;
+    logOut: () => Promise<void>;
     setTokens: (accessToken: string, refreshToken: string) => void;
     clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState>(set => ({
+    status: 'checking',
     user: null,
     accessToken: null,
     refreshToken: null,
     loading: false,
     error: null,
+
+    restoreSession: async () => {
+        const [accessToken, refreshToken] = await Promise.all([
+            SecureStore.getItemAsync(KEYS.accessToken),
+            SecureStore.getItemAsync(KEYS.refreshToken),
+        ]);
+        if (accessToken && refreshToken) {
+            set({ accessToken, refreshToken, status: 'authenticated' });
+        } else {
+            set({ status: 'guest' });
+        }
+    },
 
     signUp: async payload => {
         set({ loading: true, error: null });
@@ -60,6 +66,7 @@ export const useAuthStore = create<AuthState>(set => ({
             const res = await signup(payload);
             await saveTokens(res.accessToken, res.refreshToken);
             set({
+                status: 'authenticated',
                 user: res.user,
                 accessToken: res.accessToken,
                 refreshToken: res.refreshToken,
@@ -83,6 +90,7 @@ export const useAuthStore = create<AuthState>(set => ({
             const res = await login(payload);
             await saveTokens(res.accessToken, res.refreshToken);
             set({
+                status: 'authenticated',
                 user: res.user,
                 accessToken: res.accessToken,
                 refreshToken: res.refreshToken,
@@ -100,13 +108,19 @@ export const useAuthStore = create<AuthState>(set => ({
         }
     },
 
-    logOut: () => {
-        deleteTokens();
-        set({ user: null, accessToken: null, refreshToken: null, error: null });
+    logOut: async () => {
+        await deleteTokens();
+        set({
+            status: 'guest',
+            user: null,
+            accessToken: null,
+            refreshToken: null,
+            error: null,
+        });
     },
 
     setTokens: (accessToken, refreshToken) => {
-        set({ accessToken, refreshToken });
+        set({ accessToken, refreshToken, status: 'authenticated' });
     },
 
     clearError: () => set({ error: null }),

@@ -14,7 +14,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ThemedText } from '@components/themed-text';
 import { StyleSheet } from 'react-native';
-import { useAuthStore, loadTokensFromSecureStore } from '@/store/auth-store';
+import { useAuthStore } from '@/store/auth-store';
 import { usePushRegistration } from '@/hooks/use-push-registration';
 import * as Notifications from 'expo-notifications';
 
@@ -40,7 +40,7 @@ export const unstable_settings = {
 const AUTH_ROUTES = new Set(['login', 'signup']);
 
 function AuthGuard() {
-    const { accessToken } = useAuthStore();
+    const { status } = useAuthStore();
     const segments = useSegments();
     const router = useRouter();
 
@@ -58,22 +58,24 @@ function AuthGuard() {
     }, []);
 
     useEffect(() => {
+        if (status === 'checking') return;
+
         const currentRoute = segments[0] as string | undefined;
         const inAuthRoute = AUTH_ROUTES.has(currentRoute ?? '');
 
-        if (!accessToken && !inAuthRoute) {
+        if (status === 'guest' && !inAuthRoute) {
             router.replace('/login' as never);
-        } else if (accessToken && inAuthRoute) {
+        } else if (status === 'authenticated' && inAuthRoute) {
             router.replace('/(tabs)');
         }
-    }, [accessToken, segments]);
+    }, [status, segments]);
 
     return null;
 }
 
 export default function RootLayout() {
     const colorScheme = useColorScheme();
-    const { setTokens } = useAuthStore();
+    const { restoreSession } = useAuthStore();
     const [loaded] = useFonts({
         'Pretendard-Regular': require('../assets/fonts/Pretendard-Regular.otf'),
         'Pretendard-Medium': require('../assets/fonts/Pretendard-Medium.otf'),
@@ -83,11 +85,7 @@ export default function RootLayout() {
     });
 
     useEffect(() => {
-        loadTokensFromSecureStore().then(({ accessToken, refreshToken }) => {
-            if (accessToken && refreshToken) {
-                setTokens(accessToken, refreshToken);
-            }
-        });
+        restoreSession();
     }, []);
 
     useEffect(() => {

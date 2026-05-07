@@ -1,5 +1,11 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import NavigationTop from '@components/navigation/NavigationTop';
 import ContentContainer from '@components/container';
 import { FeedList } from '@components/feed/FeedList';
@@ -14,8 +20,48 @@ import Animated, {
     Extrapolation,
 } from 'react-native-reanimated';
 
+function FeedError({
+    message,
+    onRetry,
+}: {
+    message: string;
+    onRetry: () => void;
+}) {
+    return (
+        <View style={feedErrorStyles.container}>
+            <Text style={feedErrorStyles.message}>{message}</Text>
+            <TouchableOpacity style={feedErrorStyles.button} onPress={onRetry}>
+                <Text style={feedErrorStyles.buttonText}>다시 시도</Text>
+            </TouchableOpacity>
+        </View>
+    );
+}
+
+const feedErrorStyles = StyleSheet.create({
+    container: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 16,
+    },
+    message: {
+        fontSize: 15,
+        color: '#888',
+    },
+    button: {
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+        backgroundColor: '#0095F6',
+    },
+    buttonText: {
+        color: '#fff',
+        fontWeight: '600',
+    },
+});
+
 export default function HomeScreen() {
-    const { posts, loading, fetchFeed, loadMore } = useFeedStore();
+    const { posts, loading, error, fetchFeed, loadMore } = useFeedStore();
     const router = useRouter();
 
     // scrollY: 스크롤 위치를 UI 스레드에서 직접 추적하는 SharedValue
@@ -72,6 +118,8 @@ export default function HomeScreen() {
 
             {loading && posts.length === 0 ? (
                 <ActivityIndicator style={{ flex: 1 }} />
+            ) : error && posts.length === 0 ? (
+                <FeedError message={error} onRetry={fetchFeed} />
             ) : (
                 // scrollY를 FeedList에 전달 → useAnimatedScrollHandler가 내부에서 처리
                 <FeedList

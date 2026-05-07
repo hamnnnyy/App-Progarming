@@ -40,6 +40,13 @@ export default defineConfig([
             '@typescript-eslint/no-unsafe-function-type': 'off',
             '@typescript-eslint/no-empty-object-type': 'off',
 
+            'prettier/prettier': 'error',
+        },
+        ignores: ['dist/*', 'commitlint.config.js', 'eslint.config.mjs'],
+    },
+    {
+        files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'],
+        rules: {
             '@typescript-eslint/naming-convention': [
                 'error',
                 {
@@ -55,10 +62,7 @@ export default defineConfig([
                     format: ['PascalCase'],
                 },
             ],
-
-            'prettier/prettier': 'error',
         },
-        ignores: ['dist/*', 'commitlint.config.js', 'eslint.config.mjs'],
     },
     eslintPluginPrettierRecommended,
 ]);

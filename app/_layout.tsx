@@ -17,6 +17,30 @@ import { StyleSheet } from 'react-native';
 import { useAuthStore } from '@/store/auth-store';
 import { usePushRegistration } from '@/hooks/use-push-registration';
 import * as Notifications from 'expo-notifications';
+import * as Sentry from '@sentry/react-native';
+import { ErrorBoundary } from '@components/ErrorBoundary';
+
+Sentry.init({
+    dsn: 'https://b93272c23b3e6915ce023b344638e985@o4511346854854656.ingest.us.sentry.io/4511346855116800',
+
+    // Adds more context data to events (IP address, cookies, user, etc.)
+    // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+    sendDefaultPii: true,
+
+    // Enable Logs
+    enableLogs: true,
+
+    // Configure Session Replay
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1,
+    integrations: [
+        Sentry.mobileReplayIntegration(),
+        Sentry.feedbackIntegration(),
+    ],
+
+    // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+    // spotlight: __DEV__,
+});
 
 // TODO 실습 5-1
 // setNotificationHandler로 Foreground 배너를 활성화하세요
@@ -73,7 +97,7 @@ function AuthGuard() {
     return null;
 }
 
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
     const colorScheme = useColorScheme();
     const { restoreSession } = useAuthStore();
     const [loaded] = useFonts({
@@ -99,61 +123,67 @@ export default function RootLayout() {
             <ThemeProvider
                 value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
             >
-                <AuthGuard />
-                <Stack>
-                    <Stack.Screen
-                        name='(tabs)'
-                        options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                        name='create'
-                        options={{
-                            headerShown: false,
-                            animation: 'slide_from_right',
-                        }}
-                    />
-                    <Stack.Screen
-                        name='signup'
-                        options={{
-                            headerShown: true,
-                            headerTitle: () => (
-                                <ThemedText style={styles.default}>
-                                    회원가입
-                                </ThemedText>
-                            ),
-                            headerBackTitle: '뒤로',
-                        }}
-                    />
-                    <Stack.Screen
-                        name='login'
-                        options={{
-                            headerShown: true,
-                            headerTitle: () => (
-                                <ThemedText style={styles.default}>
-                                    로그인
-                                </ThemedText>
-                            ),
-                            headerBackTitle: '뒤로',
-                        }}
-                    />
-                    <Stack.Screen
-                        name='profile/[id]'
-                        options={{
-                            headerShown: true,
-                            headerTitle: () => (
-                                <ThemedText style={styles.default}>
-                                    사용자 프로필
-                                </ThemedText>
-                            ),
-                            headerBackTitle: '홈으로',
-                        }}
-                    />
-                </Stack>
+                <ErrorBoundary
+                    onError={err =>
+                        console.error('[GlobalBoundary]', err.message)
+                    }
+                >
+                    <AuthGuard />
+                    <Stack>
+                        <Stack.Screen
+                            name='(tabs)'
+                            options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                            name='create'
+                            options={{
+                                headerShown: false,
+                                animation: 'slide_from_right',
+                            }}
+                        />
+                        <Stack.Screen
+                            name='signup'
+                            options={{
+                                headerShown: true,
+                                headerTitle: () => (
+                                    <ThemedText style={styles.default}>
+                                        회원가입
+                                    </ThemedText>
+                                ),
+                                headerBackTitle: '뒤로',
+                            }}
+                        />
+                        <Stack.Screen
+                            name='login'
+                            options={{
+                                headerShown: true,
+                                headerTitle: () => (
+                                    <ThemedText style={styles.default}>
+                                        로그인
+                                    </ThemedText>
+                                ),
+                                headerBackTitle: '뒤로',
+                            }}
+                        />
+                        <Stack.Screen
+                            name='profile/[id]'
+                            options={{
+                                headerShown: true,
+                                headerTitle: () => (
+                                    <ThemedText style={styles.default}>
+                                        사용자 프로필
+                                    </ThemedText>
+                                ),
+                                headerBackTitle: '홈으로',
+                            }}
+                        />
+                    </Stack>
+                </ErrorBoundary>
                 <StatusBar style='auto' />
             </ThemeProvider>
         </GestureHandlerRootView>
     );
-}
+});
 
 const styles = StyleSheet.create({
     default: {
